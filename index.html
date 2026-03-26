@@ -1,0 +1,579 @@
+<!DOCTYPE html><html><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;"><meta http-equiv="x-dns-prefetch-control" content="off"><script src="https://puc.poecdn.net/authenticated_preview_page/standard.3ef2c256959faf5a756d.js"></script>
+    <meta charset="utf-8">
+    <title>Poe</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://puc.poecdn.net/authenticated_preview_page/disableWebRTC.9710cebe07429a9e8e06.js"></script><meta name="x-poe-allow-downloads" content="true"><meta name="x-poe-datastore-behavior" content="disabled"><script src="https://puc.poecdn.net/authenticated_preview_page/tw.b9024aecac666455e183.js"></script><script src="https://puc.poecdn.net/authenticated_preview_page/deps.faccd16000d314dc16d5.js"></script><script src="https://puc.poecdn.net/authenticated_preview_page/exports.b0f0f482cdeb5302b0b9.js"></script><script src="https://puc.poecdn.net/authenticated_preview_page/renderer.75c73ae6b4235f62945a.js"></script><script>Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }var _react = require('react'); var _react2 = _interopRequireDefault(_react);
+var _lucidereact = require('lucide-react');
+
+ function WorkOrderGuide() {
+  // Request Channel State
+  const [requestChannel, setRequestChannel] = _react.useState.call(void 0, 'phone'); // 'phone' | 'email'
+
+  // Information Checklist State (now captures actual details)
+  const [checklistData, setChecklistData] = _react.useState.call(void 0, {
+    building: '',
+    contactName: '',
+    contactNumber: '',
+    contactEmail: '',
+    locationIssue: '',
+    floor: '',
+    roomSpace: '',
+    issueDescription: '',
+  });
+
+  const checklistLabels = {
+    building: 'Building',
+    contactName: 'Contact Name',
+    contactNumber: 'Contact Number',
+    contactEmail: 'Contact Email',
+    locationIssue: 'Location of Issue (Specific Address)',
+    floor: 'Floor',
+    roomSpace: 'Room/Space',
+    issueDescription: 'Issue Description',
+  };
+
+  const handleChecklistChange = (key, value) => {
+    setChecklistData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const allInfoProvided = Object.values(checklistData).every(val => val.trim() !== '');
+
+  // Notes State
+  const [missingInfoNotes, setMissingInfoNotes] = _react.useState.call(void 0, []);
+  const [noteForm, setNoteForm] = _react.useState.call(void 0, {
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    whoCalled: '',
+    missingInfo: '',
+    didAnswer: 'No',
+    providedInfo: 'N/A',
+    emailSent: 'No',
+    emailDate: new Date().toISOString().split('T')[0],
+    emailTime: new Date().toTimeString().slice(0, 5),
+  });
+  const [copied, setCopied] = _react.useState.call(void 0, false);
+
+  // Wrap Up State
+  const [serviceReqId, setServiceReqId] = _react.useState.call(void 0, '');
+  const [taskId, setTaskId] = _react.useState.call(void 0, '');
+  const [wrapUpCopied, setWrapUpCopied] = _react.useState.call(void 0, false);
+
+  // Priority State
+  const [selectedPriority, setSelectedPriority] = _react.useState.call(void 0, 'p1-lift');
+
+  // Tririga Checklist State
+  const tririgaStepsData = [
+    "Log into Tririga.",
+    "Select My Request.",
+    "Select the relevant trade skill from the list.",
+    "Search for the site (e.g. Town Hall House). Make sure to search and enter the building, floor and room. If unable, capture detail on why in the notes.",
+    "Look at the 'Comments' section for insights on the building and how to raise certain requests.",
+    "Select the most relevant service request from the list. (Increase drop-down to 100 if needed). Read descriptions carefully. Priorities are preset.",
+    "Enter a description of the work required.",
+    "Submit the job. (CX involvement ends on Tririga here)."
+  ];
+  const [tririgaChecklist, setTririgaChecklist] = _react.useState.call(void 0, new Array(tririgaStepsData.length).fill(false));
+
+  // Handlers
+  const handleAddNote = (e) => {
+    e.preventDefault();
+    setMissingInfoNotes([...missingInfoNotes, { ...noteForm, id: Date.now() }]);
+    setNoteForm({
+      ...noteForm,
+      whoCalled: '',
+      missingInfo: '',
+      didAnswer: 'No',
+      providedInfo: 'N/A',
+      emailSent: 'No'
+    });
+  };
+
+  const copyNotesToClipboard = () => {
+    if (missingInfoNotes.length === 0) return;
+    const textToCopy = missingInfoNotes.map(note => {
+      let text = `Date/Time: ${note.date} ${note.time}\nCalled: ${note.whoCalled}\nMissing Info: ${note.missingInfo}\nAnswered: ${note.didAnswer}\nProvided Info: ${note.didAnswer === 'Yes' ? note.providedInfo : 'N/A'}`;
+      if (note.didAnswer === 'No' && note.emailSent === 'Yes') {
+        text += `\nEmail Follow-up Sent: Yes (${note.emailDate} ${note.emailTime})`;
+      }
+      return text;
+    }).join('\n\n-------------------\n\n');
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const getWrapUpText = () => {
+    let text = `Service Request ID: ${serviceReqId || 'N/A'}\nTask ID: ${taskId || 'N/A'}\n\n`;
+    
+    text += `--- Captured Information ---\n`;
+    Object.entries(checklistLabels).forEach(([key, label]) => {
+      text += `${label}: ${checklistData[key] || 'Not Provided'}\n`;
+    });
+    text += `\n`;
+
+    if (missingInfoNotes.length > 0) {
+      text += `--- Missing Info Follow-up Notes ---\n`;
+      missingInfoNotes.forEach(note => {
+        text += `Date/Time: ${note.date} ${note.time}\nCalled: ${note.whoCalled}\nMissing Info: ${note.missingInfo}\nAnswered: ${note.didAnswer}\nProvided Info: ${note.didAnswer === 'Yes' ? note.providedInfo : 'N/A'}\n`;
+        if (note.didAnswer === 'No' && note.emailSent === 'Yes') {
+          text += `Email Follow-up Sent: Yes (${note.emailDate} ${note.emailTime})\n`;
+        }
+        text += `\n`;
+      });
+    } else {
+      text += `--- Missing Info Follow-up Notes ---\nNo follow-up calls recorded.\n`;
+    }
+    return text.trim();
+  };
+
+  const copyWrapUpToClipboard = () => {
+    navigator.clipboard.writeText(getWrapUpText()).then(() => {
+      setWrapUpCopied(true);
+      setTimeout(() => setWrapUpCopied(false), 2000);
+    });
+  };
+
+  const handleTririgaCheck = (index) => {
+    const newChecklist = [...tririgaChecklist];
+    newChecklist[index] = !newChecklist[index];
+    setTririgaChecklist(newChecklist);
+  };
+
+  const allTririgaChecked = tririgaChecklist.every(Boolean);
+
+  // Priority Data Definition
+  const priorities = [
+    {
+      id: 'p1-lift', title: 'Priority 1 Lift', shortDesc: 'Critical lift or safety emergencies.',
+      colorTheme: { badge: 'bg-red-600 text-white', cardActive: 'border-red-600 bg-red-50', cardInactive: 'border-gray-200 hover:border-red-300', panelBg: 'bg-red-600', panelText: 'text-white', panelBox: 'bg-red-500/50' },
+      responseTime: '40 minutes', rectifyTime: 'Same day', examples: ['Lift Entrapment', 'Internal flooding within buildings', 'Water over exposed wires', 'Total loss of power within buildings', 'Freezers malfunctioning', 'Individuals trapped'], note: ''
+    },
+    {
+      id: 'p1', title: 'Priority 1', shortDesc: 'Risk to life, safety, or major damage.',
+      colorTheme: { badge: 'bg-orange-500 text-white', cardActive: 'border-orange-500 bg-orange-50', cardInactive: 'border-gray-200 hover:border-orange-300', panelBg: 'bg-orange-500', panelText: 'text-white', panelBox: 'bg-orange-400/50' },
+      responseTime: '2 hours', rectifyTime: '3 days', examples: ['Disruption to multiple users', 'Risk to life, safety or high risk of injury', 'Major damage to a building'], note: 'Important: Make safe for P1 broken window requests must go to Glazier, not Soft Services.'
+    },
+    {
+      id: 'p2', title: 'Priority 2', shortDesc: 'Multi-user disruption, functions continue.',
+      colorTheme: { badge: 'bg-amber-500 text-white', cardActive: 'border-amber-500 bg-amber-50', cardInactive: 'border-gray-200 hover:border-amber-300', panelBg: 'bg-amber-500', panelText: 'text-white', panelBox: 'bg-amber-400/50' },
+      responseTime: 'Midday next business day', rectifyTime: '5 days', examples: ['Service Failure results in disruption to multiple users across multiple locations.', 'Functions of the City can still be performed.'], note: ''
+    },
+    {
+      id: 'p3', title: 'Priority 3', shortDesc: 'Single user disruption.',
+      colorTheme: { badge: 'bg-blue-500 text-white', cardActive: 'border-blue-500 bg-blue-50', cardInactive: 'border-gray-200 hover:border-blue-300', panelBg: 'bg-blue-500', panelText: 'text-white', panelBox: 'bg-blue-400/50' },
+      responseTime: '3 business days', rectifyTime: '10 business days', examples: ['Service Failure results in disruption to single user in one location.'], note: ''
+    },
+    {
+      id: 'p4', title: 'Priority 4', shortDesc: 'Minor damage, no functional impact.',
+      colorTheme: { badge: 'bg-gray-500 text-white', cardActive: 'border-gray-500 bg-gray-50', cardInactive: 'border-gray-200 hover:border-gray-300', panelBg: 'bg-gray-500', panelText: 'text-white', panelBox: 'bg-gray-400/50' },
+      responseTime: '10 days', rectifyTime: '20 days', examples: ['Minor damage has occurred to the building but service failure does not impact the function of the Building.'], note: ''
+    }
+  ];
+
+  const activePriorityData = priorities.find(p => p.id === selectedPriority);
+
+  return (
+    _react2.default.createElement('div', { className: "min-h-screen bg-gray-50 p-6 font-sans text-gray-800 pb-20"     ,}
+      , _react2.default.createElement('div', { className: "max-w-6xl mx-auto space-y-6"  ,}
+
+        /* Header */
+        , _react2.default.createElement('header', { className: "bg-blue-900 text-white p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4"          ,}
+          , _react2.default.createElement('div', null
+            , _react2.default.createElement('h1', { className: "text-3xl font-bold flex items-center gap-2"    ,}
+              , _react2.default.createElement(_lucidereact.ClipboardList, { className: "w-8 h-8" ,} ), "Work Order Creation Guide"
+
+            )
+            , _react2.default.createElement('p', { className: "text-blue-200 mt-2" ,}, "Guide for raising requests in Tririga"     )
+          )
+          , _react2.default.createElement('div', { className: "flex flex-col sm:flex-row gap-3"   ,}
+            , _react2.default.createElement('a', { href: "https://cos.ecifm.com.au/index.html", target: "_blank", rel: "noreferrer", className: "bg-white text-blue-900 px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-50 transition"           ,}, "Open Tririga "
+                , _react2.default.createElement(_lucidereact.ExternalLink, { className: "w-4 h-4" ,} )
+            )
+            , _react2.default.createElement('a', { href: "https://formitize.co/Xku-Ii", target: "_blank", rel: "noreferrer", className: "bg-red-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-700 transition"           ,}, "P1 Formitize Dispatch "
+                 , _react2.default.createElement(_lucidereact.ExternalLink, { className: "w-4 h-4" ,} )
+            )
+          )
+        )
+
+        , _react2.default.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-3 gap-6"   ,}
+
+          /* Left Column: Checklist & Protocols */
+          , _react2.default.createElement('div', { className: "lg:col-span-1 space-y-6" ,}
+
+            /* Checklist */
+            , _react2.default.createElement('section', { className: "bg-white p-6 rounded-xl shadow-sm border border-gray-200"     ,}
+              , _react2.default.createElement('div', { className: "flex justify-between items-center mb-4"   ,}
+                , _react2.default.createElement('h2', { className: "text-xl font-bold flex items-center gap-2"    ,}
+                  , _react2.default.createElement(_lucidereact.CheckCircle2, { className: "w-6 h-6 text-green-600"  ,} ), "Information Capture"
+
+                )
+              )
+
+              /* Channel Toggle */
+              , _react2.default.createElement('div', { className: "flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg"     ,}
+                , _react2.default.createElement('button', { 
+                  onClick: () => setRequestChannel('phone'),
+                  className: `flex-1 py-1.5 text-sm font-semibold rounded-md flex items-center justify-center gap-2 transition-colors ${requestChannel === 'phone' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'}`,}
+
+                  , _react2.default.createElement(_lucidereact.Phone, { className: "w-4 h-4" ,} ), " Phone"
+                )
+                , _react2.default.createElement('button', { 
+                  onClick: () => setRequestChannel('email'),
+                  className: `flex-1 py-1.5 text-sm font-semibold rounded-md flex items-center justify-center gap-2 transition-colors ${requestChannel === 'email' ? 'bg-white shadow-sm text-blue-700' : 'text-gray-500 hover:text-gray-700'}`,}
+
+                  , _react2.default.createElement(_lucidereact.Mail, { className: "w-4 h-4" ,} ), " Email"
+                )
+              )
+
+              , _react2.default.createElement('div', { className: "space-y-3",}
+                , Object.entries(checklistLabels).map(([key, label]) => (
+                  _react2.default.createElement('div', { key: key, className: "flex flex-col" ,}
+                    , _react2.default.createElement('label', { className: "text-xs font-semibold text-gray-600 mb-1"   ,}, label)
+                    , _react2.default.createElement('input', { 
+                      type: "text", 
+                      className: `w-full text-sm p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${checklistData[key].trim() !== '' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-300'}`,
+                      placeholder: `Enter ${label}...`,
+                      value: checklistData[key],
+                      onChange: (e) => handleChecklistChange(key, e.target.value),}
+                    )
+                  )
+                ))
+              )
+            )
+
+            /* Protocol Display based on Channel and missing info */
+            , _react2.default.createElement('section', { className: `p-6 rounded-xl shadow-sm border transition-colors ${allInfoProvided ? 'bg-green-50 border-green-200' : (requestChannel === 'phone' ? 'bg-blue-50 border-blue-200' : 'bg-yellow-50 border-yellow-200')}`,}
+              , allInfoProvided ? (
+                _react2.default.createElement('div', null
+                  , _react2.default.createElement('h2', { className: "text-xl font-bold text-green-800 flex items-center gap-2 mb-2"      ,}, "✅ All Info Captured"
+
+                  )
+                  , _react2.default.createElement('ol', { className: "list-decimal ml-5 text-sm text-green-800 font-medium space-y-1"     ,}
+                    , _react2.default.createElement('li', null, "CREATE the request in the system immediately."      )
+                  )
+                )
+              ) : requestChannel === 'phone' ? (
+                _react2.default.createElement('div', null
+                  , _react2.default.createElement('h2', { className: "text-xl font-bold text-blue-800 flex items-center gap-2 mb-2"      ,}
+                    , _react2.default.createElement(_lucidereact.Phone, { className: "w-6 h-6" ,} ), " Phone Protocol"
+                  )
+                  , _react2.default.createElement('p', { className: "text-blue-800 text-sm font-medium"  ,}, "The caller is on the phone. Please ask them directly for any missing information fields above before ending the call."
+
+                  )
+                )
+              ) : (
+                _react2.default.createElement('div', null
+                  , _react2.default.createElement('h2', { className: "text-xl font-bold text-yellow-800 flex items-center gap-2 mb-2"      ,}, "⚠️ Email Protocol"
+
+                  )
+                  , _react2.default.createElement('p', { className: "text-yellow-700 text-sm mb-3"  ,}, "Information is missing from the email request."      )
+                  , _react2.default.createElement('ol', { className: "list-decimal ml-5 text-sm text-yellow-800 font-medium space-y-2"     ,}
+                    , _react2.default.createElement('li', null, _react2.default.createElement('strong', null, "CALL"), " the requestor immediately for details."     )
+                    , _react2.default.createElement('li', null, "If no answer: "   , _react2.default.createElement('strong', null, "REPLY"), " via email noting what is missing."      )
+                    , _react2.default.createElement('li', null, _react2.default.createElement('strong', null, "CREATE"), " the event in Tririga."    )
+                  )
+                )
+              )
+            )
+
+            /* Notes Recorder (Only show if missing info AND channel is email) */
+            , (!allInfoProvided && requestChannel === 'email') && (
+              _react2.default.createElement('section', { className: "bg-white p-6 rounded-xl shadow-sm border border-gray-200"     ,}
+                , _react2.default.createElement('h2', { className: "text-lg font-bold mb-4 flex items-center gap-2"     ,}
+                  , _react2.default.createElement(_lucidereact.PhoneCall, { className: "w-5 h-5 text-blue-600"  ,} ), "Follow-up Call Recorder"
+
+                )
+                , _react2.default.createElement('form', { onSubmit: handleAddNote, className: "space-y-4",}
+                  , _react2.default.createElement('div', { className: "grid grid-cols-2 gap-4"  ,}
+                    , _react2.default.createElement('div', null
+                      , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Date")
+                      , _react2.default.createElement('input', { type: "date", required: true, className: "w-full text-sm p-2 border rounded"    , value: noteForm.date, onChange: e => setNoteForm({...noteForm, date: e.target.value}),} )
+                    )
+                    , _react2.default.createElement('div', null
+                      , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Time")
+                      , _react2.default.createElement('input', { type: "time", required: true, className: "w-full text-sm p-2 border rounded"    , value: noteForm.time, onChange: e => setNoteForm({...noteForm, time: e.target.value}),} )
+                    )
+                  )
+                  , _react2.default.createElement('div', null
+                    , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Who did you call?"   )
+                    , _react2.default.createElement('input', { type: "text", required: true, className: "w-full text-sm p-2 border rounded"    , placeholder: "Name/Number", value: noteForm.whoCalled, onChange: e => setNoteForm({...noteForm, whoCalled: e.target.value}),} )
+                  )
+                  , _react2.default.createElement('div', null
+                    , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "What info was missing?"   )
+                    , _react2.default.createElement('input', { type: "text", required: true, className: "w-full text-sm p-2 border rounded"    , placeholder: "e.g. Floor number"  , value: noteForm.missingInfo, onChange: e => setNoteForm({...noteForm, missingInfo: e.target.value}),} )
+                  )
+                  , _react2.default.createElement('div', { className: "grid grid-cols-2 gap-4"  ,}
+                    , _react2.default.createElement('div', null
+                      , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Did they answer?"  )
+                      , _react2.default.createElement('select', { className: "w-full text-sm p-2 border rounded"    , value: noteForm.didAnswer, onChange: e => setNoteForm({...noteForm, didAnswer: e.target.value}),}
+                        , _react2.default.createElement('option', null, "Yes")
+                        , _react2.default.createElement('option', null, "No")
+                      )
+                    )
+                    , noteForm.didAnswer === 'Yes' && (
+                      _react2.default.createElement('div', null
+                        , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Provided info?" )
+                        , _react2.default.createElement('select', { className: "w-full text-sm p-2 border rounded"    , value: noteForm.providedInfo, onChange: e => setNoteForm({...noteForm, providedInfo: e.target.value}),}
+                          , _react2.default.createElement('option', null, "Yes")
+                          , _react2.default.createElement('option', null, "No")
+                          , _react2.default.createElement('option', null, "N/A")
+                        )
+                      )
+                    )
+                  )
+
+                  , noteForm.didAnswer === 'No' && (
+                    _react2.default.createElement('div', { className: "bg-gray-50 p-3 rounded border border-gray-200 space-y-3"     ,}
+                      , _react2.default.createElement('div', null
+                        , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Email sent requesting info?"   )
+                        , _react2.default.createElement('select', { className: "w-full text-sm p-2 border rounded"    , value: noteForm.emailSent, onChange: e => setNoteForm({...noteForm, emailSent: e.target.value}),}
+                          , _react2.default.createElement('option', null, "No")
+                          , _react2.default.createElement('option', null, "Yes")
+                        )
+                      )
+                      , noteForm.emailSent === 'Yes' && (
+                        _react2.default.createElement('div', { className: "grid grid-cols-2 gap-4"  ,}
+                          , _react2.default.createElement('div', null
+                            , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Email Date" )
+                            , _react2.default.createElement('input', { type: "date", required: true, className: "w-full text-sm p-2 border rounded"    , value: noteForm.emailDate, onChange: e => setNoteForm({...noteForm, emailDate: e.target.value}),} )
+                          )
+                          , _react2.default.createElement('div', null
+                            , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Email Time" )
+                            , _react2.default.createElement('input', { type: "time", required: true, className: "w-full text-sm p-2 border rounded"    , value: noteForm.emailTime, onChange: e => setNoteForm({...noteForm, emailTime: e.target.value}),} )
+                          )
+                        )
+                      )
+                    )
+                  )
+
+                  , _react2.default.createElement('button', { type: "submit", className: "w-full bg-blue-600 text-white py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition"        ,}, "Record Note"
+
+                  )
+                )
+
+                , missingInfoNotes.length > 0 && (
+                  _react2.default.createElement('div', { className: "mt-6 space-y-3" ,}
+                    , _react2.default.createElement('div', { className: "flex justify-between items-center border-b pb-2"    ,}
+                      , _react2.default.createElement('h3', { className: "text-sm font-bold text-gray-700"  ,}, "Recorded Notes" )
+                      , _react2.default.createElement('button', { onClick: copyNotesToClipboard, className: "flex items-center gap-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition"           ,}
+                        , copied ? _react2.default.createElement(_lucidereact.Check, { className: "w-3 h-3 text-green-600"  ,} ) : _react2.default.createElement(_lucidereact.Copy, { className: "w-3 h-3" ,} )
+                        , copied ? 'Copied!' : 'Copy All'
+                      )
+                    )
+                    , missingInfoNotes.map(note => (
+                      _react2.default.createElement('div', { key: note.id, className: "bg-gray-50 p-3 rounded border text-xs text-gray-700 space-y-1"      ,}
+                        , _react2.default.createElement('div', { className: "flex justify-between font-semibold"  ,}
+                          , _react2.default.createElement('span', null, note.date, " " , note.time)
+                          , _react2.default.createElement('span', null, "Called: " , note.whoCalled)
+                        )
+                        , _react2.default.createElement('p', null, _react2.default.createElement('strong', null, "Missing:"), " " , note.missingInfo)
+                        , _react2.default.createElement('p', null, _react2.default.createElement('strong', null, "Answered:"), " " , note.didAnswer, " " , note.didAnswer === 'Yes' && `| Provided Info: ${note.providedInfo}`)
+                        , note.didAnswer === 'No' && note.emailSent === 'Yes' && (
+                          _react2.default.createElement('p', { className: "text-blue-700 font-semibold mt-1"  ,}, "Email Sent: "  , note.emailDate, " " , note.emailTime)
+                        )
+                      )
+                    ))
+                  )
+                )
+              )
+            )
+          )
+
+          /* Right Column: Tririga Steps & SLAs */
+          , _react2.default.createElement('div', { className: "lg:col-span-2 space-y-6" ,}
+
+            /* SLAs and Priorities */
+            , _react2.default.createElement('section', { className: "bg-white p-6 rounded-xl shadow-sm border border-gray-200"     ,}
+              , _react2.default.createElement('h2', { className: "text-xl font-bold mb-4 flex items-center gap-2"     ,}
+                , _react2.default.createElement(_lucidereact.Clock, { className: "w-6 h-6 text-purple-600"  ,} ), "Determine Priority & SLAs"
+
+              )
+
+              , _react2.default.createElement('div', { className: "bg-purple-50 p-4 rounded-lg mb-6 border border-purple-100 text-sm text-purple-900"       ,}
+                , _react2.default.createElement('p', { className: "font-semibold mb-2" ,}, "Important Rules:" )
+                , _react2.default.createElement('ul', { className: "list-disc pl-5 space-y-1"  ,}
+                  , _react2.default.createElement('li', null, "Priority is determined automatically in Tririga by selecting the appropriate request type."           )
+                  , _react2.default.createElement('li', null, _react2.default.createElement('strong', null, "Do not ask the customer for the priority."       ))
+                  , _react2.default.createElement('li', null, "If customer believes it is urgent, escalate to Property Manager or Precinct Manager for approval."              )
+                )
+              )
+
+              /* Interactive Priority Selector */
+              , _react2.default.createElement('div', { className: "space-y-4",}
+                , _react2.default.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-3"   ,}
+                  , priorities.map((priority) => {
+                    const isActive = selectedPriority === priority.id;
+                    return (
+                      _react2.default.createElement('button', {
+                        key: priority.id,
+                        onClick: () => setSelectedPriority(priority.id),
+                        className: `p-4 rounded-xl border-2 text-center transition-all duration-200 flex flex-col items-center justify-center gap-2
+                          ${isActive ? priority.colorTheme.cardActive : priority.colorTheme.cardInactive}
+                          ${isActive ? 'shadow-md scale-[1.02]' : 'bg-white shadow-sm hover:shadow'}
+                        `,}
+
+                        , _react2.default.createElement('span', { className: `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${priority.colorTheme.badge}`,}
+                          , priority.title
+                        )
+                        , _react2.default.createElement('span', { className: "text-sm text-gray-600 font-medium mt-1"   ,}
+                          , priority.shortDesc
+                        )
+                      )
+                    )
+                  })
+                )
+
+                /* Detailed Active Panel */
+                , activePriorityData && (
+                  _react2.default.createElement('div', { className: `mt-4 rounded-xl p-6 transition-all duration-300 ${activePriorityData.colorTheme.panelBg} ${activePriorityData.colorTheme.panelText} shadow-inner`,}
+                    , _react2.default.createElement('h3', { className: "text-xl font-bold mb-4 border-b border-white/20 pb-2"     ,}, "Target Response Times: "
+                         , activePriorityData.title.toUpperCase()
+                    )
+                    , _react2.default.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"    ,}
+                      , _react2.default.createElement('div', { className: `p-4 rounded-lg text-center ${activePriorityData.colorTheme.panelBox}`,}
+                        , _react2.default.createElement('p', { className: "text-sm opacity-90 mb-1 font-medium"   ,}, "Response Time" )
+                        , _react2.default.createElement('p', { className: "text-2xl font-bold" ,}, activePriorityData.responseTime)
+                      )
+                      , _react2.default.createElement('div', { className: `p-4 rounded-lg text-center ${activePriorityData.colorTheme.panelBox}`,}
+                        , _react2.default.createElement('p', { className: "text-sm opacity-90 mb-1 font-medium"   ,}, "Rectify Time" )
+                        , _react2.default.createElement('p', { className: "text-2xl font-bold" ,}, activePriorityData.rectifyTime)
+                      )
+                    )
+                    , _react2.default.createElement('div', null
+                      , _react2.default.createElement('h4', { className: "font-semibold mb-2 text-lg"  ,}, "Examples / Criteria:"  )
+                      , _react2.default.createElement('ul', { className: "list-disc pl-5 space-y-1.5 text-sm md:text-base"    ,}
+                        , activePriorityData.examples.map((ex, idx) => _react2.default.createElement('li', { key: idx,}, ex))
+                      )
+                      , activePriorityData.note && (
+                        _react2.default.createElement('div', { className: "mt-4 p-3 bg-white/20 rounded-lg text-sm font-semibold border border-white/30"       ,}
+                          , activePriorityData.note
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+
+            /* Tririga Steps Checklist */
+            , _react2.default.createElement('section', { className: "bg-white p-6 rounded-xl shadow-sm border border-gray-200"     ,}
+              , _react2.default.createElement('h2', { className: "text-xl font-bold mb-4 flex items-center gap-2"     ,}
+                , _react2.default.createElement(_lucidereact.Info, { className: "w-6 h-6 text-blue-600"  ,} ), "Tririga Step-by-Step Checklist"
+
+              )
+              , _react2.default.createElement('div', { className: "space-y-3",}
+                , tririgaStepsData.map((text, index) => {
+                  const isStep4 = index === 3;
+                  return (
+                    _react2.default.createElement('label', { key: index, className: `flex items-start gap-3 cursor-pointer group p-3 rounded-lg transition-colors ${isStep4 ? 'bg-red-50 border border-red-200 shadow-sm' : 'hover:bg-gray-50'}`,}
+                      , _react2.default.createElement('input', { 
+                        type: "checkbox", 
+                        className: `mt-1 w-5 h-5 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0 ${isStep4 ? 'text-red-600 focus:ring-red-500' : 'text-blue-600'}`,
+                        checked: tririgaChecklist[index],
+                        onChange: () => handleTririgaCheck(index),}
+                      )
+                      , _react2.default.createElement('span', { className: `text-sm pt-0.5 ${tririgaChecklist[index] ? 'text-gray-400 line-through' : 'text-gray-700'}`,}
+                        , _react2.default.createElement('strong', { className: "mr-1",}, index + 1, ".")
+                        , isStep4 ? (
+                          _react2.default.createElement('span', { className: "text-red-900 font-bold" ,}, "Search for the site (e.g. Town Hall House). Make sure to search and enter the building, floor and room. If unable, capture detail on why in the notes."
+
+                            , _react2.default.createElement('span', { className: "block mt-2 text-xs uppercase bg-red-600 text-white px-2 py-1 rounded inline-block tracking-wider"          ,}, "Critical: Floor and Room/Space are mandatory for us to capture, even if the system allows skipping!"
+
+                            )
+                          )
+                        ) : (
+                          text
+                        )
+                      )
+                    )
+                  );
+                })
+              )
+
+              /* Completion Confirmation */
+              , allTririgaChecked && (
+                _react2.default.createElement('div', { className: "mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3"        ,}
+                  , _react2.default.createElement(_lucidereact.CheckCircle2, { className: "w-6 h-6 text-green-600 flex-shrink-0"   ,} )
+                  , _react2.default.createElement('div', null
+                    , _react2.default.createElement('p', { className: "text-green-800 font-bold" ,}, "All Tririga steps completed!"   )
+                    , _react2.default.createElement('p', { className: "text-green-700 text-sm" ,}, "You have successfully followed the standard operating procedure."       )
+                  )
+                )
+              )
+            )
+
+          )
+        )
+
+        /* Wrap Up Notes Generator */
+        , _react2.default.createElement('section', { className: "bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6"      ,}
+          , _react2.default.createElement('div', { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b pb-4"        ,}
+            , _react2.default.createElement('div', null
+              , _react2.default.createElement('h2', { className: "text-xl font-bold flex items-center gap-2 text-gray-800"     ,}
+                , _react2.default.createElement(_lucidereact.FileText, { className: "w-6 h-6 text-teal-600"  ,} ), "Genesys Wrap Up Notes Generator"
+
+              )
+              , _react2.default.createElement('p', { className: "text-sm text-gray-500 mt-1"  ,}, "Combine your Tririga IDs, captured details, and notes to paste into Genesys."           )
+            )
+            , _react2.default.createElement('button', { 
+              onClick: copyWrapUpToClipboard,
+              className: `flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-white transition-colors shadow-sm ${wrapUpCopied ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700'}`,}
+
+              , wrapUpCopied ? _react2.default.createElement(_lucidereact.Check, { className: "w-5 h-5" ,} ) : _react2.default.createElement(_lucidereact.Copy, { className: "w-5 h-5" ,} )
+              , wrapUpCopied ? 'Copied to Clipboard!' : 'Copy for Genesys'
+            )
+          )
+
+          , _react2.default.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6"   ,}
+            /* Inputs */
+            , _react2.default.createElement('div', { className: "md:col-span-1 space-y-4" ,}
+              , _react2.default.createElement('div', null
+                , _react2.default.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-1"    ,}, "Service Request ID"  )
+                , _react2.default.createElement('input', { 
+                  type: "text", 
+                  className: "w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow"        , 
+                  placeholder: "e.g. SR-123456" , 
+                  value: serviceReqId, 
+                  onChange: e => setServiceReqId(e.target.value),} 
+                )
+              )
+              , _react2.default.createElement('div', null
+                , _react2.default.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-1"    ,}, "Task ID" )
+                , _react2.default.createElement('input', { 
+                  type: "text", 
+                  className: "w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-shadow"        , 
+                  placeholder: "e.g. T-987654" , 
+                  value: taskId, 
+                  onChange: e => setTaskId(e.target.value),} 
+                )
+              )
+              , _react2.default.createElement('div', { className: "p-4 bg-teal-50 rounded-lg border border-teal-100"    ,}
+                , _react2.default.createElement('p', { className: "text-sm text-teal-800" ,}
+                  , _react2.default.createElement('strong', null, "Note:"), " The checklist details and any follow-up notes you recorded will automatically be appended to the output."
+                )
+              )
+            )
+
+            /* Preview */
+            , _react2.default.createElement('div', { className: "md:col-span-2",}
+              , _react2.default.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-1"    ,}, "Preview")
+              , _react2.default.createElement('textarea', { 
+                readOnly: true,
+                className: "w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-700 resize-none focus:outline-none"           ,
+                value: getWrapUpText(),}
+              )
+            )
+          )
+        )
+
+      )
+    )
+  );
+} exports.default = WorkOrderGuide;
+</script></head>
+  <body>
+  
+
+<div id="preview-app"></div></body></html>
