@@ -9,7 +9,7 @@ var _lucidereact = require('lucide-react');
   // Request Channel State
   const [requestChannel, setRequestChannel] = _react.useState.call(void 0, 'phone'); // 'phone' | 'email'
 
-  // Information Checklist State (now captures actual details)
+  // Information Checklist State
   const [checklistData, setChecklistData] = _react.useState.call(void 0, {
     building: '',
     contactName: '',
@@ -57,6 +57,10 @@ var _lucidereact = require('lucide-react');
   const [serviceReqId, setServiceReqId] = _react.useState.call(void 0, '');
   const [taskId, setTaskId] = _react.useState.call(void 0, '');
   const [wrapUpCopied, setWrapUpCopied] = _react.useState.call(void 0, false);
+
+  // Floor/Room Selection State
+  const [floorRoomStatus, setFloorRoomStatus] = _react.useState.call(void 0, ''); // 'yes' | 'no' | ''
+  const [floorRoomReason, setFloorRoomReason] = _react.useState.call(void 0, '');
 
   // Priority State
   const [selectedPriority, setSelectedPriority] = _react.useState.call(void 0, 'p1-lift');
@@ -112,6 +116,15 @@ var _lucidereact = require('lucide-react');
       text += `${label}: ${checklistData[key] || 'Not Provided'}\n`;
     });
     text += `\n`;
+
+    if (floorRoomStatus) {
+      text += `--- Tririga Floor/Room Selection ---\n`;
+      text += `Able to select Floor/Room separately: ${floorRoomStatus === 'yes' ? 'Yes' : 'No'}\n`;
+      if (floorRoomStatus === 'no') {
+        text += `Reason: ${floorRoomReason || 'Not provided'}\n`;
+      }
+      text += `\n`;
+    }
 
     if (missingInfoNotes.length > 0) {
       text += `--- Missing Info Follow-up Notes ---\n`;
@@ -463,28 +476,77 @@ var _lucidereact = require('lucide-react');
                 , _react2.default.createElement(_lucidereact.Info, { className: "w-6 h-6 text-blue-600"  ,} ), "Tririga Step-by-Step Checklist"
 
               )
-              , _react2.default.createElement('div', { className: "space-y-3",}
+              , _react2.default.createElement('div', { className: "space-y-4",}
                 , tririgaStepsData.map((text, index) => {
                   const isStep4 = index === 3;
                   return (
-                    _react2.default.createElement('label', { key: index, className: `flex items-start gap-3 cursor-pointer group p-3 rounded-lg transition-colors ${isStep4 ? 'bg-red-50 border border-red-200 shadow-sm' : 'hover:bg-gray-50'}`,}
+                    _react2.default.createElement('div', { key: index, className: `flex items-start gap-3 p-3 rounded-lg transition-colors ${isStep4 ? 'bg-red-50 border border-red-200 shadow-sm' : 'hover:bg-gray-50'}`,}
                       , _react2.default.createElement('input', { 
                         type: "checkbox", 
-                        className: `mt-1 w-5 h-5 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0 ${isStep4 ? 'text-red-600 focus:ring-red-500' : 'text-blue-600'}`,
+                        id: `step-${index}`,
+                        className: `mt-1 w-5 h-5 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0 cursor-pointer ${isStep4 ? 'text-red-600 focus:ring-red-500' : 'text-blue-600'}`,
                         checked: tririgaChecklist[index],
                         onChange: () => handleTririgaCheck(index),}
                       )
-                      , _react2.default.createElement('span', { className: `text-sm pt-0.5 ${tririgaChecklist[index] ? 'text-gray-400 line-through' : 'text-gray-700'}`,}
-                        , _react2.default.createElement('strong', { className: "mr-1",}, index + 1, ".")
-                        , isStep4 ? (
-                          _react2.default.createElement('span', { className: "text-red-900 font-bold" ,}, "Search for the site (e.g. Town Hall House). Make sure to search and enter the building, floor and room. If unable, capture detail on why in the notes."
+                      , _react2.default.createElement('div', { className: "flex-1",}
+                        , _react2.default.createElement('label', { htmlFor: `step-${index}`, className: `text-sm cursor-pointer block ${tririgaChecklist[index] ? 'text-gray-400 line-through' : 'text-gray-700'}`,}
+                          , _react2.default.createElement('strong', { className: "mr-1",}, index + 1, ".")
+                          , isStep4 ? (
+                            _react2.default.createElement('span', { className: "text-red-900 font-bold" ,}, "Search for the site (e.g. Town Hall House). Make sure to search and enter the building, floor and room. If unable, capture detail on why in the notes."
 
-                            , _react2.default.createElement('span', { className: "block mt-2 text-xs uppercase bg-red-600 text-white px-2 py-1 rounded inline-block tracking-wider"          ,}, "Critical: Floor and Room/Space are mandatory for us to capture, even if the system allows skipping!"
+                              , _react2.default.createElement('span', { className: "block mt-2 text-xs uppercase bg-red-600 text-white px-2 py-1 rounded inline-block tracking-wider"          ,}, "Critical: Floor and Room/Space are mandatory for us to capture, even if the system allows skipping!"
+
+                              )
+                            )
+                          ) : (
+                            text
+                          )
+                        )
+
+                        /* Additional question for Step 4 */
+                        , isStep4 && (
+                          _react2.default.createElement('div', { className: "mt-4 p-4 bg-white rounded border border-red-100 shadow-sm"      ,}
+                            , _react2.default.createElement('p', { className: "text-sm font-semibold text-gray-800 mb-3"   ,}, "Were you able to select the floor and room/space separately in Tririga?"
 
                             )
+                            , _react2.default.createElement('div', { className: "flex gap-6 mb-3"  ,}
+                              , _react2.default.createElement('label', { className: "flex items-center gap-2 text-sm cursor-pointer"    ,}
+                                , _react2.default.createElement('input', { 
+                                  type: "radio", 
+                                  name: "floorRoomStatus", 
+                                  value: "yes", 
+                                  className: "text-red-600 focus:ring-red-500 w-4 h-4"   ,
+                                  checked: floorRoomStatus === 'yes', 
+                                  onChange: () => setFloorRoomStatus('yes'),} 
+                                ), "Yes"
+
+                              )
+                              , _react2.default.createElement('label', { className: "flex items-center gap-2 text-sm cursor-pointer"    ,}
+                                , _react2.default.createElement('input', { 
+                                  type: "radio", 
+                                  name: "floorRoomStatus", 
+                                  value: "no", 
+                                  className: "text-red-600 focus:ring-red-500 w-4 h-4"   ,
+                                  checked: floorRoomStatus === 'no', 
+                                  onChange: () => setFloorRoomStatus('no'),} 
+                                ), "No"
+
+                              )
+                            )
+
+                            , floorRoomStatus === 'no' && (
+                              _react2.default.createElement('div', { className: "mt-2",}
+                                , _react2.default.createElement('label', { className: "block text-xs font-semibold text-gray-600 mb-1"    ,}, "Reason for not selecting:"   )
+                                , _react2.default.createElement('input', { 
+                                  type: "text", 
+                                  placeholder: "e.g. System error, room not listed..."     , 
+                                  className: "w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:outline-none"        , 
+                                  value: floorRoomReason, 
+                                  onChange: e => setFloorRoomReason(e.target.value),} 
+                                )
+                              )
+                            )
                           )
-                        ) : (
-                          text
                         )
                       )
                     )
@@ -551,7 +613,7 @@ var _lucidereact = require('lucide-react');
               )
               , _react2.default.createElement('div', { className: "p-4 bg-teal-50 rounded-lg border border-teal-100"    ,}
                 , _react2.default.createElement('p', { className: "text-sm text-teal-800" ,}
-                  , _react2.default.createElement('strong', null, "Note:"), " The checklist details and any follow-up notes you recorded will automatically be appended to the output."
+                  , _react2.default.createElement('strong', null, "Note:"), " The checklist details, Tririga selection issues, and any follow-up notes you recorded will automatically be appended to the output."
                 )
               )
             )
@@ -561,7 +623,7 @@ var _lucidereact = require('lucide-react');
               , _react2.default.createElement('label', { className: "block text-sm font-semibold text-gray-700 mb-1"    ,}, "Preview")
               , _react2.default.createElement('textarea', { 
                 readOnly: true,
-                className: "w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-700 resize-none focus:outline-none"           ,
+                className: "w-full h-72 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-700 resize-none focus:outline-none"           ,
                 value: getWrapUpText(),}
               )
             )
